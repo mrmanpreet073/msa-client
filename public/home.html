@@ -1,0 +1,214 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>OIDC SSO Test Home</title>
+  <style>
+    body {
+      font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+      background: linear-gradient(gray, rgb(9, 96, 189));
+      color: #333;
+      display: flex;
+      justify-content: center;
+      align-items: center;
+      height: 100vh;
+      margin: 0;
+    }
+
+    .container {
+      background: #92a8b461;
+      padding: 2.5rem;
+      border-radius: 8px;
+      box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
+      text-align: center;
+      max-width: 400px;
+      width: 100%;
+    }
+
+    h1 {
+      margin-bottom: 0.5rem;
+      color: #003060;
+      font-size: 1.8rem;
+      box-shadow: 0 4px rgba(255, 255, 255, 0.322);
+    }
+
+    h2 {
+      margin-bottom: 0.5rem;
+      color: #edeeee;
+      font-size: 1.8rem;
+    }
+
+    p {
+      color: #d6d1d1;
+      margin-bottom: 2rem;
+      font-size: 0.95rem;
+    }
+
+    .btn-group {
+      display: flex;
+      flex-direction: column;
+      gap: 1rem;
+    }
+
+    button {
+      padding: 0.75rem 1.5rem;
+      font-size: 1rem;
+      font-weight: 600;
+      border: none;
+      border-radius: 4px;
+      cursor: pointer;
+      transition: background-color 0.2s, transform 0.1s;
+    }
+
+    button:active {
+      transform: scale(0.98);
+    }
+
+    #loginBtn {
+      background-color: #01326b;
+      color: white;
+      /* display: flex;
+      justify-content: center;
+      align-items: center;
+      gap: 5px; */
+    }
+
+    #loginBtn:hover {
+      background-color: #0051b3;
+    }
+
+    #logoutBtn:hover {
+      background-color: #cfcfcf;
+    }
+
+    #signupBtn {
+      background-color: #eaeaea;
+      color: #444;
+    }
+
+    #signupBtn:hover {
+      /* background-color: #dc6d6d; */
+      /* Soft red to distinctively test signup flow */
+      background-color: #cfcfcf;
+    }
+
+    .footer {
+      margin-top: 2rem;
+      font-size: 0.8rem;
+      color: #999;
+    }
+
+    .msa {
+      height: 20px;
+      margin: -3px 5px;
+      /* box-shadow: 0px 1.5px 10px 0px rgba(255, 255, 255, 0.129); */
+
+      /* background-color:rgb(0, 0, 0); */
+    }
+
+    .btnp:hover {
+      background-color: #cfcfcf;
+
+    }
+  </style>
+</head>
+
+<body>
+  <div class="container">
+    <h1>My App</h1>
+    <h2>SSO Integration Test</h1>
+      <p>Testing OIDC Authentication flow on Localhost</p>
+
+      <div class="btn-group">
+        <button id="loginBtn">Log In with <img src="msa.png" class="msa" alt=""></button>
+        <button id="signupBtn">Create an Account</button>
+        <button id="logoutBtn">Logout</button>
+
+      </div>
+
+      <div class="footer">
+        <!-- Redirecting to: <code>localhost:5000</code> -->
+      </div>
+      <button class="btnp">Protected Page</button>
+  </div>
+
+  <script>
+    // --- Your OIDC Script Starts Here ---
+
+    const loginBtn = document.getElementById("loginBtn");
+    loginBtn.addEventListener("click", () => {
+      const params = new URLSearchParams({
+        client_id: "0574abc86d6b17f7b626f696b8476556",
+        redirect_uri: "https://msa-client.onrender.com/callback.html",
+        response_type: "code",
+        scope: "openid profile email",
+        state: crypto.randomUUID()
+      });
+      window.location.href = `https://msa-auth.onrender.com/o/authorize?${params}`;
+    });
+
+    const signupBtn = document.getElementById("signupBtn");
+    signupBtn.addEventListener("click", () => {
+      const params = new URLSearchParams({
+        client_id: "0574abc86d6b17f7b626f696b8476556",
+        redirect_uri: "https://msa-client.onrender.com/callback.html",
+        response_type: "code",
+        scope: "openid profile email",
+        state: crypto.randomUUID()
+      });
+      window.location.href = `https://msa-auth.onrender.com/signup?${params}`;
+    });
+
+    // --- Your OIDC Script Ends Here ---
+    const btnp = document.querySelector(".btnp");
+
+
+    btnp.addEventListener("click", async (e) => {
+      window.location.href = "/protected";
+    });
+
+
+    document
+      .getElementById("logoutBtn")
+      .addEventListener(
+        "click",
+        async () => {
+
+          try {
+
+            const response = await fetch(
+              "https://msa-auth.onrender.com/logout",
+              {
+                method: "POST",
+                credentials: "include"
+              }
+            );
+
+            if (!response.ok) {
+              throw new Error("Logout failed");
+            }
+
+            localStorage.removeItem("access_token");
+            localStorage.removeItem("id_token");
+
+            window.location.href = "/";
+
+          } catch (err) {
+
+            console.error(err);
+
+            alert(
+              "Unable to logout. Please try again."
+            );
+
+          }
+        }
+      );
+
+  </script>
+
+</body>
+
+</html>

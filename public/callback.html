@@ -1,0 +1,151 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>OIDC Callback Processing...</title>
+  <style>
+    body {
+      font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+      background:linear-gradient(gray, rgb(9, 96, 189));
+      color: #333;
+      display: flex;
+      justify-content: center;
+      align-items: center;
+      min-height: 100vh;
+      margin: 0;
+      padding: 20px;
+      box-sizing: border-box;
+    }
+    .card {
+      background: #ffffff30;
+      padding: 2rem;
+      border-radius: 8px;
+      box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
+      max-width: 600px;
+      width: 100%;
+    }
+    h2 {
+      margin-top: 0;
+      color: #ffffff;
+    }
+    #status-box {
+      padding: 1rem;
+      border-radius: 4px;
+      margin-bottom: 1.5rem;
+      font-weight: 600;
+      background-color: #e3f2fd;
+      color: #0d47a1;
+    }
+    .error {
+      background-color: #ffebee !important;
+      color: #c62828 !important;
+    }
+    .success {
+      background-color: #e8f5e9 !important;
+      color: #2e7d32 !important;
+    }
+    pre {
+      background: #1e1e1e;
+      color: #7ec699;
+      padding: 15px;
+      border-radius: 5px;
+      overflow-x: auto;
+      font-size: 0.85rem;
+      max-height: 300px;
+    }
+    .label {
+      font-size: 0.9rem;
+      font-weight: 600;
+      color: #e0e0e0;
+      margin-bottom: 0.5rem;
+    }
+  </style>
+</head>
+<body>
+
+  <div class="card">
+    <h2>OIDC Authentication</h2>
+    <div id="status-box">
+      <span id="message">Processing authorization code...</span>
+    </div>
+    
+    <div class="label">Token Response Data:</div>
+    <pre id="token-data">Waiting for token exchange...</pre>
+  </div>
+
+  <script>
+    async function exchangeCode() {
+      // ============================
+      // Read Query Params
+      // ============================
+      const params = new URLSearchParams(window.location.search);
+      const code = params.get("code");
+      const state = params.get("state");
+      
+      const messageEl = document.getElementById("message");
+      const statusBox = document.getElementById("status-box");
+      const tokenDataEl = document.getElementById("token-data");
+
+      if (!code) {
+        messageEl.innerText = "Authorization code missing";
+        statusBox.classList.add("error");
+        return;
+      }
+
+      try {
+        // ============================
+        // Exchange Code For Tokens
+        // ============================
+        const response = await fetch("https://msa-auth.onrender.com/o/token", {
+          method: "POST",
+          credentials: "include",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({
+            code,
+            client_id: "0574abc86d6b17f7b626f696b8476556",
+            client_secret: "4177e6dad33caa31a2736a09d51b1914d8a645604ae1ffe3ede255f66cd17482", 
+            redirect_uri: "https://msa-client.onrender.com/callback.html",
+            grant_type: "authorization_code"
+          })
+        });
+
+        const data = await response.json();
+        console.log(data);
+        
+        // Render payload in the UI container
+        tokenDataEl.textContent = JSON.stringify(data, null, 2);
+
+        if (!response.ok) {
+          throw new Error(data.error_description || data.error || "Token exchange failed");
+        }
+
+        // Store tokens securely in localStorage
+        if (data.access_token) localStorage.setItem("access_token", data.access_token);
+        if (data.id_token) localStorage.setItem("id_token", data.id_token);
+
+        messageEl.innerText = "Login Successful! Redirecting to dashboard...";
+        statusBox.className = "success";
+
+        // ============================
+        // Redirect User
+        // ============================
+        setTimeout(() => {
+          // Redirect to home/dashbord page of client app (adjust route if necessary)
+          window.location.href = "/";
+        }, 10000); // Reduced to 3 seconds for a smoother testing loop
+
+      } catch (error) {
+        console.error(error);
+        messageEl.innerText = `Login failed: ${error.message}`;
+        statusBox.className = "error";
+        tokenDataEl.textContent = "No token received.";
+      }
+    }
+
+    // Initialize the exchange when the script execution reaches this point
+    exchangeCode();
+  </script>
+
+</body>
+</html>
